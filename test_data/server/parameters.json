@@ -1,0 +1,5 @@
+{
+  "covariate_file": "CatCovariate.csv",
+  "data_file": "MissingData.csv",
+  "combat_alg_type": "combatMegaDC"
+}

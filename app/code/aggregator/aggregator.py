@@ -3,7 +3,6 @@ from nvflare.apis.shareable import Shareable
 from nvflare.apis.fl_context import FLContext
 from nvflare.app_common.abstract.aggregator import Aggregator
 from nvflare.apis.fl_constant import ReservedKey
-from .get_global_average import get_global_average
 
 class MyAggregator(Aggregator):
     """
@@ -19,7 +18,7 @@ class MyAggregator(Aggregator):
         """
         super().__init__()
         # Store results as a dictionary
-        self.site_results: Dict[str, Dict[str, Any]] = {}
+        pass
 
     def accept(self, site_result: Shareable, fl_ctx: FLContext) -> bool:
         """
@@ -32,12 +31,7 @@ class MyAggregator(Aggregator):
         :param fl_ctx: The federated learning context for this run.
         :return: Boolean indicating if the result was successfully accepted.
         """
-        site_name = site_result.get_peer_prop(
-            key=ReservedKey.IDENTITY_NAME, default=None)
-
-        # Store the result for the site using its identity name as the key
-        self.site_results[site_name] = site_result["result"]
-        return True
+        pass
 
     def aggregate(self, fl_ctx: FLContext) -> Shareable:
         """
@@ -49,22 +43,4 @@ class MyAggregator(Aggregator):
         :param fl_ctx: The federated learning context for this run.
         :return: A Shareable object containing the aggregated global result.
         """
-
-        # Retrieve the decimal places from the computation parameters
-        computation_parameters = fl_ctx.get_prop("COMPUTATION_PARAMETERS")
-        decimal_places = computation_parameters.get("decimal_places", 2)
-
-        # Transform site_results into the format expected by get_global_average
-        items = [
-            {"average": result["average"], "count": result["count"]}
-            for result in self.site_results.values()
-            if "average" in result and "count" in result
-        ]
-
-        # Compute the global average using the helper function
-        global_average = get_global_average(items, decimal_places)
-
-        # Create a new Shareable to store the aggregated result
-        outgoing_shareable = Shareable()
-        outgoing_shareable["global_average"] = global_average
-        return outgoing_shareable
+        pass

@@ -4,14 +4,9 @@ from nvflare.apis.impl.controller import Controller, Task, ClientTask
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.signal import Signal
 from nvflare.apis.shareable import Shareable
-from _utils.utils import get_parameters_file_path
+from utils.utils import get_parameters_file_path
 from typing import Callable
-
-
-TASK_NAME_GET_LOCAL_AVERAGE_AND_COUNT = "GET_LOCAL_AVERAGE_AND_COUNT"
-TASK_NAME_ACCEPT_GLOBAL_AVERAGE = "ACCEPT_GLOBAL_AVERAGE"
-AGGREGATOR_ID = "aggregator"
-
+from utils.task_constants import *
 
 class MyController(Controller):
     def __init__(
@@ -45,7 +40,7 @@ class MyController(Controller):
         :param fl_ctx: Federated learning context for this run.
         """
         # Assign the aggregator to the controller
-        self.aggregator = self._engine.get_component(AGGREGATOR_ID)
+        self.aggregator = self._engine.get_component(COMBAT_AGGREGATOR_ID)
         # Load and set computation parameters for the sites
         self._load_and_set_computation_parameters(fl_ctx)
 
@@ -60,9 +55,12 @@ class MyController(Controller):
         :param abort_signal: Signal for aborting the flow if needed.
         :param fl_ctx: Federated learning context for this run.
         """
+        #Keeps track of the iteration number
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=0)
+        
         # Broadcast the regression task and send site results to the aggregator
         self._broadcast_task(
-            task_name=TASK_NAME_GET_LOCAL_AVERAGE_AND_COUNT,
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP1,
             data=Shareable(),
             result_cb=self._accept_site_regression_result,
             fl_ctx=fl_ctx,
@@ -72,9 +70,42 @@ class MyController(Controller):
         # Aggregate results from all sites
         aggregate_result = self.aggregator.aggregate(fl_ctx)
 
+        #Increment iteration number after every aggregation
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=1)
+
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
-            task_name=TASK_NAME_ACCEPT_GLOBAL_AVERAGE,
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP2,
+            data=aggregate_result,
+            result_cb=self._accept_site_regression_result,
+            fl_ctx=fl_ctx,
+            abort_signal=abort_signal,
+        )
+        
+        # Aggregate results from all sites
+        aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        
+        #Increment iteration number after every aggregation
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
+        
+        # Broadcast the global aggregated results to all sites
+        self._broadcast_task(
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP3,
+            data=aggregate_result,
+            result_cb=self._accept_site_regression_result,
+            fl_ctx=fl_ctx,
+            abort_signal=abort_signal,
+        )
+        
+        # Aggregate results from all sites
+        aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        
+        #Increment iteration number after every aggregation
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=3)
+        
+        # Broadcast the global aggregated results to all sites
+        self._broadcast_task(
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP4,
             data=aggregate_result,
             result_cb=None,
             fl_ctx=fl_ctx,

@@ -7,14 +7,18 @@ from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
 from nvflare.apis.signal import Signal
-from _utils.utils import get_data_directory_path, get_output_directory_path
-from .local_average import get_local_average_and_count
+from utils.utils import get_data_directory_path, get_output_directory_path
+from utils.task_constants import *
 
-TASK_NAME_GET_LOCAL_AVERAGE_AND_COUNT = "GET_LOCAL_AVERAGE_AND_COUNT"
-TASK_NAME_ACCEPT_GLOBAL_AVERAGE = "ACCEPT_GLOBAL_AVERAGE"
+from client_cache_store import CacheSerialStore
 
-
-class MyExecutor(Executor):
+class DCCombatExecutor(Executor):
+    def __init__(self):
+        """
+        Initialize the SrrExecutor. This constructor sets up the logger.
+        """
+        logging.info("DCCombat Executor initialized")
+        
     def execute(
         self,
         task_name: str,
@@ -23,28 +27,20 @@ class MyExecutor(Executor):
         abort_signal: Signal,
     ) -> Shareable:
 
-        logging.info(f"Task Name: {task_name}")
-
-        if task_name == TASK_NAME_GET_LOCAL_AVERAGE_AND_COUNT:
-            data = load_data(fl_ctx)
-            computation_parameters = get_computation_parameters(fl_ctx)
-            decimal_places = computation_parameters["decimal_places"]
-
-            local_average_and_count = get_local_average_and_count(
-                data, decimal_places)
-
-            save_results_to_file(local_average_and_count,
-                                 "local_average.json", fl_ctx)
-            shareable = Shareable()
-            shareable["result"] = local_average_and_count
-            return shareable
-
-        if task_name == TASK_NAME_ACCEPT_GLOBAL_AVERAGE:
-            result = {"global_average": shareable["global_average"]}
-            save_results_to_file(result, "global_average.json", fl_ctx)
-            return Shareable()
-
-
+        """
+        Main execution entry point. Routes tasks to specific methods based on the task name.
+        
+        Parameters:
+            task_name: Name of the task to perform.
+            shareable: Shareable object containing data for the task.
+            fl_ctx: Federated learning context.
+            abort_signal: Signal object to handle task abortion.
+            
+        Returns:
+            A Shareable object containing results of the task.
+        """
+        
+        pass
 def load_data(fl_ctx: FLContext):
     data_dir_path = get_data_directory_path(fl_ctx)
     data_file_filepath = os.path.join(data_dir_path, "data.json")
