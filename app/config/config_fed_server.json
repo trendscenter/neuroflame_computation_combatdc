@@ -1,0 +1,24 @@
+{
+  "format_version": 2,
+  "server": {
+    "heart_beat_timeout": 600
+  },
+  "task_data_filters": [],
+  "task_result_filters": [],
+  "components": [
+    {
+      "id": "aggregator",
+      "path": "aggregator.aggregator.MyAggregator",
+      "args": {
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "id": "controller",
+      "path": "controller.controller.MyController",
+      "args": {
+      }
+    }
+  ]
+}

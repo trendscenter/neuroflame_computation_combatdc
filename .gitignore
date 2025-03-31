@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.idea
+simulator_workspace/
+test_output/
+poc-workspace/
+.devcontainer/
