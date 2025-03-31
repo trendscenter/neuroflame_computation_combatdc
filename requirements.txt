@@ -10,4 +10,3 @@ mat73
 pandas
 scipy
 coinstacparsers
-nvflare

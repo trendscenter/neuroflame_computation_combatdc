@@ -1,7 +1,11 @@
+import json
 import os
 import logging
 from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
+
+import datetime
+
 
 def is_repo_root(path: str) -> bool:
     """Check if the given path is the repository root by looking for 'system' and 'app' directories."""
@@ -44,6 +48,10 @@ def get_output_directory_path(fl_ctx: FLContext) -> str:
     """Determine and return the output directory path based on the available paths."""
     job_id = fl_ctx.get_job_id()
     site_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
+    
+    # need to check in neuroflame
+    if site_name == None:
+        site_name = 'remote'
 
     # Check if the environment variable OUTPUT_DIR is set
     env_path = os.getenv("OUTPUT_DIR")
@@ -80,3 +88,44 @@ def get_parameters_file_path(fl_ctx: FLContext) -> str:
         return simulator_and_poc_path
 
     raise FileNotFoundError("Parameters file path could not be determined.")
+
+def get_computation_parameters(fl_ctx: FLContext):
+    return fl_ctx.get_peer_context().get_prop("COMPUTATION_PARAMETERS", {"decimal_places": 2})
+
+def log(fl_ctx: FLContext, message: str, message_level : str = "info" ) -> None:
+    """
+    Logs details to log file.
+
+    Args:
+        log_path: path of the log file
+        message_level: "error" or "info". Default level is info
+
+    Returns:
+
+    """
+    log_path = os.path.join(get_output_directory_path(fl_ctx), "client_log.txt")
+    time_prefix = datetime.datetime.now().astimezone().strftime("%m/%d/%Y %H:%M:%S") + ' : '
+    message = time_prefix + message
+
+    if message_level.strip().lower() == "error":
+        logging.error(message)
+    else:
+        logging.info(message)
+
+    try:
+        with open(log_path, 'a') as f:
+            f.write(f"{message}\n")
+            f.flush()  # Ensure data is written to the file
+    except IOError as e:
+        logging.error(f"Failed to write to log file {log_path}: {e}")
+
+def save_results_to_file(results: dict, file_name: str, fl_ctx: FLContext):
+    output_dir = get_output_directory_path(fl_ctx)
+    logging.info(f"Saving results to: {output_dir}")
+    os.makedirs(output_dir, exist_ok=True)
+    try:
+        with open(os.path.join(output_dir, file_name), "w") as f:
+            json.dump(results, f, indent=4)
+        logging.info(f"Results successfully saved to: {os.path.join(output_dir, file_name)}")
+    except Exception as e:
+        raise RuntimeError(f"Failed to save results to {file_name}: {e}")
