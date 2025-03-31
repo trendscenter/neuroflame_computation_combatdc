@@ -1,5 +1,6 @@
 matplotlib
 nilearn
+nibabel
 numba
 numpy
 scikit-learn
@@ -10,3 +11,4 @@ mat73
 pandas
 scipy
 coinstacparsers
+simplejson

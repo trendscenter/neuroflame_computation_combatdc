@@ -61,10 +61,17 @@ class DCCombatAggregator(Aggregator):
         :param fl_ctx: The federated learning context for this run.
         :return: A Shareable object containing the aggregated global result.
         """
+        outgoing_shareable = Shareable()
         contribution_round = fl_ctx.get_prop(key="CURRENT_ROUND", default=None)
-        if (contribution_round == 0):
+        
+        if contribution_round == 0:
             agg_result = am.combat_remote_step1(fl_ctx, self.site_results[contribution_round], self.agg_cache)
             self.agg_cache = agg_result['cache']
-            outgoing_shareable = Shareable()
             outgoing_shareable['result'] = agg_result['output']
-            return outgoing_shareable
+        
+        elif contribution_round == 1:
+            agg_result = am.combat_remote_step2(fl_ctx, self.site_results[contribution_round], self.agg_cache)
+            self.agg_cache = agg_result['cache']
+            outgoing_shareable['result'] = agg_result['output']
+        
+        return outgoing_shareable

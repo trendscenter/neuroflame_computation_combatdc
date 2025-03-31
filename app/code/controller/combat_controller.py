@@ -8,6 +8,8 @@ from utils.utils import get_parameters_file_path
 from typing import Callable
 from utils.task_constants import *
 
+from utils.utils import log
+
 class DCCombatController(Controller):
     def __init__(
         self,
@@ -16,8 +18,7 @@ class DCCombatController(Controller):
         task_timeout: int = 0,
     ):
         """
-        Initializes the SrrController with specific parameters for task broadcasting.
-
+        Initiated by the Job to complete a workflow defined in the fed_client_server.json
         :param min_clients: Minimum number of client responses required.
         :param wait_time_after_min_received: Time to wait after receiving minimum responses.
         :param task_timeout: Timeout for task completion.
@@ -32,7 +33,7 @@ class DCCombatController(Controller):
 
     def start_controller(self, fl_ctx: FLContext) -> None:
         """
-        Called when the controller starts. It assigns the SRR aggregator component
+        Called when the controller starts. It assigns the aggregator component
         and loads computation parameters into the shared context.
 
         This is a Framework-Specific Required Method.
@@ -40,7 +41,7 @@ class DCCombatController(Controller):
         :param fl_ctx: Federated learning context for this run.
         """
         # Assign the aggregator to the controller
-        self.aggregator = self._engine.get_component("aggregator")
+        self.aggregator = self._engine.get_component(COMBAT_AGGREGATOR_ID)
         # Load and set computation parameters for the sites
         self._load_and_set_computation_parameters(fl_ctx)
 
@@ -70,23 +71,23 @@ class DCCombatController(Controller):
         # Aggregate results from all sites
         aggregate_result = self.aggregator.aggregate(fl_ctx)
 
-        # #Increment iteration number after every aggregation
-        # fl_ctx.set_prop(key="CURRENT_ROUND", value=1)
+        #Increment iteration number after every aggregation
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=1)
 
-        # # Broadcast the global aggregated results to all sites
-        # self._broadcast_task(
-        #     task_name=TASK_NAME_LOCAL_CLIENT_STEP2,
-        #     data=aggregate_result,
-        #     result_cb=self._accept_site_regression_result,
-        #     fl_ctx=fl_ctx,
-        #     abort_signal=abort_signal,
-        # )
+        # Broadcast the global aggregated results to all sites
+        self._broadcast_task(
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP2,
+            data=aggregate_result,
+            result_cb=self._accept_site_regression_result,
+            fl_ctx=fl_ctx,
+            abort_signal=abort_signal,
+        )
         
         # # Aggregate results from all sites
-        # aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        aggregate_result = self.aggregator.aggregate(fl_ctx)
         
         # #Increment iteration number after every aggregation
-        # fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
         
         # # Broadcast the global aggregated results to all sites
         # self._broadcast_task(
@@ -98,7 +99,7 @@ class DCCombatController(Controller):
         # )
         
         # # Aggregate results from all sites
-        # aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        # aggregate_result = self.aggregator.aggregate(fl_ctx)
         
         # #Increment iteration number after every aggregation
         # fl_ctx.set_prop(key="CURRENT_ROUND", value=3)

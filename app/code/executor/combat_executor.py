@@ -50,4 +50,9 @@ class DCCombatExecutor(Executor):
             cache_store.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
         
+        if task_name == TASK_NAME_LOCAL_CLIENT_STEP2:
+            client_result = helpers.perform_task_step2(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
+            cache_store.update_cache_dict(client_result['cache'])
+            outgoing_shareable['result'] = client_result['output']
+
         return outgoing_shareable

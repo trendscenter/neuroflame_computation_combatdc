@@ -7,14 +7,14 @@
   "task_result_filters": [],
   "components": [
     {
-      "id": "aggregator",
+      "id": "combat_aggregator",
       "path": "aggregator.combat_aggregator.DCCombatAggregator",
       "args": {}
     }
   ],
   "workflows": [
     {
-      "id": "controller",
+      "id": "combat_controller",
       "path": "controller.combat_controller.DCCombatController",
       "args": {}
     }
