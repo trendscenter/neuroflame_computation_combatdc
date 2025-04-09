@@ -8,7 +8,7 @@ from utils.utils import get_parameters_file_path
 from typing import Callable
 from utils.task_constants import *
 
-from utils.utils import log
+# from utils.utils import log
 
 class DCCombatController(Controller):
     def __init__(

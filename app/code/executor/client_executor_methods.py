@@ -11,7 +11,7 @@ from nvflare.apis.shareable import Shareable
 from nvflare.apis.signal import Signal
 from nvflare.apis.fl_constant import FLContextKey
 
-from utils.utils import get_data_directory_path, get_output_directory_path, log, get_computation_parameters
+from utils.utils import get_data_directory_path, get_output_directory_path, get_computation_parameters
 from . import local_ancillary as lc
 from . import ancillary as ac
 
@@ -125,7 +125,7 @@ def perform_task_step1(fl_ctx: FLContext):
     data_path = os.path.join(input_directory,data_file_name)
     combat_type = computation_parameters['combat_alg_type']
         
-    log(fl_ctx, f'-- Checking file paths : {str(covariates_path)} and {str(data_path)}')
+    # log(fl_ctx, f'-- Checking file paths : {str(covariates_path)} and {str(data_path)}')
     cache_dict = {
         'covar_urls': covariates_path,
         'data_urls': data_path,
@@ -133,7 +133,7 @@ def perform_task_step1(fl_ctx: FLContext):
         'combat_alg_type': combat_type
     }
     
-    log(fl_ctx, f'step1: {cache_dict}')
+    # log(fl_ctx, f'step1: {cache_dict}')
     result = {
         'cache': cache_dict,
         'output': {}
@@ -149,7 +149,7 @@ def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     lambda_value = cache_dict.get('lambda_value')
     combat_alg_type = cache_dict.get('combat_alg_type')
     
-    log(fl_ctx, f'step2: initial: {covar_url}, {data_url}, {lambda_value}, {combat_alg_type}')
+    # log(fl_ctx, f'step2: initial: {covar_url}, {data_url}, {lambda_value}, {combat_alg_type}')
     
     # if a covariates URL was passed and the file has any stored information
     if len(covar_url) > 0 and os.path.getsize(covar_url): 
@@ -168,7 +168,7 @@ def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     site_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
     site_index = parse_clientId(site_name)
     
-    log(fl_ctx, f'site_name: {site_name} and site_index: {site_index}')
+    # log(fl_ctx, f'site_name: {site_name} and site_index: {site_index}')
     X = mat_X 
     Y = mat_Y.values
     Y_columns = mat_Y.columns 
@@ -225,7 +225,7 @@ def perform_task_step3(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     data = np.array(np.transpose(mat_Y))
     data_columns = pd.read_json(cache_dict.get("data_names"), orient='split').values
     
-    log(fl_ctx, f'data_columns: {data_columns}')
+    # log(fl_ctx, f'data_columns: {data_columns}')
     
     design = covar
     B_hat = np.array(agg_results["B_hat"])
@@ -280,7 +280,7 @@ def perform_task_step4(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     site_index = cache_dict.get('site_index')
     site_array = cache_dict.get('site_array')
     
-    log(fl_ctx, f'site4: stand_mean: {stand_mean}, mod_mean: {mod_mean}, local_n_samples: {local_n_sample}, site_index: {site_index}, site_array: {site_array}')
+    # log(fl_ctx, f'site4: stand_mean: {stand_mean}, mod_mean: {mod_mean}, local_n_samples: {local_n_sample}, site_index: {site_index}, site_array: {site_array}')
     
     indices = [index for index,element in enumerate(site_array) if element== int(site_index)]
     filtered_mean = stand_mean[indices]

@@ -7,6 +7,8 @@ from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
 from nvflare.apis.signal import Signal
+
+from utils.logger import NvFlareLogger
 from utils.utils import get_data_directory_path, get_output_directory_path
 from utils.task_constants import *
 
@@ -15,12 +17,13 @@ from . import client_cache_store as cache
 from . import client_executor_methods as helpers
 
 class DCCombatExecutor(Executor):
+
     def __init__(self):
         """
-        Initialize the SrrExecutor. This constructor sets up the logger.
+        Initialize the Combat. This constructor sets up the logger.
         """
-        logging.info("DCCombat Executor initialized")
-        
+        logging.info('DC-Combat is running')
+
     def execute(
         self,
         task_name: str,
@@ -41,29 +44,34 @@ class DCCombatExecutor(Executor):
         Returns:
             A Shareable object containing results of the task.
         """
-        cache_store = cache.CacheSerialStore(get_output_directory_path(fl_ctx))
+        
+        client_log_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)+".log"
+        output_path = get_output_directory_path(fl_ctx)
+        self.logger = NvFlareLogger(client_log_name, output_path, 'info')
+        
+        cache_dict = cache.CacheSerialStore(get_output_directory_path(fl_ctx)) 
+        cache_path = cache_dict.get_cache_dir()
+        
         # Prepare the Shareable object to send the result to other components
         outgoing_shareable = Shareable()
         
         if task_name == TASK_NAME_LOCAL_CLIENT_STEP1:
             client_result = helpers.perform_task_step1(fl_ctx)
-            cache_store.update_cache_dict(client_result['cache'])
+            self.cache.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
         
         elif task_name == TASK_NAME_LOCAL_CLIENT_STEP2:
-            client_result = helpers.perform_task_step2(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
-            cache_store.update_cache_dict(client_result['cache'])
+            client_result = helpers.perform_task_step2(shareable, fl_ctx, abort_signal, cache_dict.get_cache_dict())
+            self.cache.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
             
         elif task_name == TASK_NAME_LOCAL_CLIENT_STEP3:
-            client_result = helpers.perform_task_step3(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
-            cache_store.update_cache_dict(client_result['cache'])
+            client_result = helpers.perform_task_step3(shareable, fl_ctx, abort_signal, cache_dict.get_cache_dict())
+            self.cache.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
         
         elif task_name == TASK_NAME_LOCAL_CLIENT_STEP4:
-            helpers.perform_task_step4(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
-            # cache_store.update_cache_dict(client_result['cache'])
-            # outgoing_shareable['result'] = client_result['output']
+            helpers.perform_task_step4(shareable, fl_ctx, abort_signal, cache_dict.get_cache_dict())
         
         else:
             return ValueError({

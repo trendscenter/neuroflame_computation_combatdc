@@ -94,33 +94,6 @@ def get_parameters_file_path(fl_ctx: FLContext) -> str:
 def get_computation_parameters(fl_ctx: FLContext):
     return fl_ctx.get_peer_context().get_prop("COMPUTATION_PARAMETERS", {"decimal_places": 2})
 
-def log(fl_ctx: FLContext, message: str, message_level : str = "info" ) -> None:
-    """
-    Logs details to log file.
-
-    Args:
-        log_path: path of the log file
-        message_level: "error" or "info". Default level is info
-
-    Returns:
-
-    """
-    log_path = os.path.join(get_output_directory_path(fl_ctx), "client_log.txt")
-    time_prefix = datetime.datetime.now().astimezone().strftime("%m/%d/%Y %H:%M:%S") + ' : '
-    message = time_prefix + message
-
-    if message_level.strip().lower() == "error":
-        logging.error(message)
-    else:
-        logging.info(message)
-
-    try:
-        with open(log_path, 'a') as f:
-            f.write(f"{message}\n")
-            f.flush()  # Ensure data is written to the file
-    except IOError as e:
-        logging.error(f"Failed to write to log file {log_path}: {e}")
-
 def save_results_to_file(results: dict, file_name: str, fl_ctx: FLContext):
     output_dir = get_output_directory_path(fl_ctx)
     logging.info(f"Saving results to: {output_dir}")

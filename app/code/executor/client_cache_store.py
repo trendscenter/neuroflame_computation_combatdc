@@ -12,8 +12,14 @@ class CacheSerialStore():
             with open(self._cache_file_path, "r") as f:
                 self.client_cache_dict = json.load(f)
 
+        self.client_cache_dir = os.path.join(self._cache_dir, "client_computation_cache")
+        os.makedirs(self.client_cache_dir, exist_ok=True)  # succeeds even if directory exists.
+
     def get_cache_dict(self):
         return self.client_cache_dict
+
+    def get_cache_dir(self):
+        return self.client_cache_dir
 
     def update_cache_dict(self, cache_dict):
         self.client_cache_dict.update(cache_dict)

@@ -7,7 +7,7 @@ from nvflare.apis.fl_constant import ReservedKey
 
 from . import aggregator_methods as am
 
-from utils.utils import log
+# from utils.utils import log
 
 class DCCombatAggregator(Aggregator):
 
@@ -35,10 +35,10 @@ class DCCombatAggregator(Aggregator):
             key=ReservedKey.IDENTITY_NAME, default=None)
         contribution_round = fl_ctx.get_prop(key="CURRENT_ROUND", default=None)
         
-        log(
-            fl_ctx,
-            f"Aggregator received contribution from {site_name} for round {contribution_round}"
-        )
+        # log(
+        #     fl_ctx,
+        #     f"Aggregator received contribution from {site_name} for round {contribution_round}"
+        # )
         
         if contribution_round is None or site_name is None:
             return False  # Could log a warning/error here as well

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from typing import Dict, Any
-from utils.utils import log
+# from utils.utils import log
 
 def validate_and_get_inputs(covariates_path: str, data_path: str, computation_parameters: Dict[str, Any], log_path: str) -> bool:
     try:
