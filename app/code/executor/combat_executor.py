@@ -50,9 +50,25 @@ class DCCombatExecutor(Executor):
             cache_store.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
         
-        if task_name == TASK_NAME_LOCAL_CLIENT_STEP2:
+        elif task_name == TASK_NAME_LOCAL_CLIENT_STEP2:
             client_result = helpers.perform_task_step2(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
             cache_store.update_cache_dict(client_result['cache'])
             outgoing_shareable['result'] = client_result['output']
+            
+        elif task_name == TASK_NAME_LOCAL_CLIENT_STEP3:
+            client_result = helpers.perform_task_step3(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
+            cache_store.update_cache_dict(client_result['cache'])
+            outgoing_shareable['result'] = client_result['output']
+        
+        elif task_name == TASK_NAME_LOCAL_CLIENT_STEP4:
+            helpers.perform_task_step4(shareable, fl_ctx, abort_signal, cache_store.get_cache_dict())
+            # cache_store.update_cache_dict(client_result['cache'])
+            # outgoing_shareable['result'] = client_result['output']
+        
+        else:
+            return ValueError({
+                'message': 'Invalid task Name',
+                'value': task_name
+            })
 
         return outgoing_shareable

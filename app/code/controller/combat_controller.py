@@ -89,29 +89,29 @@ class DCCombatController(Controller):
         # #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
         
-        # # Broadcast the global aggregated results to all sites
-        # self._broadcast_task(
-        #     task_name=TASK_NAME_LOCAL_CLIENT_STEP3,
-        #     data=aggregate_result,
-        #     result_cb=self._accept_site_regression_result,
-        #     fl_ctx=fl_ctx,
-        #     abort_signal=abort_signal,
-        # )
+        # Broadcast the global aggregated results to all sites
+        self._broadcast_task(
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP3,
+            data=aggregate_result,
+            result_cb=self._accept_site_regression_result,
+            fl_ctx=fl_ctx,
+            abort_signal=abort_signal,
+        )
         
         # # Aggregate results from all sites
-        # aggregate_result = self.aggregator.aggregate(fl_ctx)
+        aggregate_result = self.aggregator.aggregate(fl_ctx)
         
         # #Increment iteration number after every aggregation
-        # fl_ctx.set_prop(key="CURRENT_ROUND", value=3)
+        fl_ctx.set_prop(key="CURRENT_ROUND", value=3)
         
-        # # Broadcast the global aggregated results to all sites
-        # self._broadcast_task(
-        #     task_name=TASK_NAME_LOCAL_CLIENT_STEP4,
-        #     data=aggregate_result,
-        #     result_cb=None,
-        #     fl_ctx=fl_ctx,
-        #     abort_signal=abort_signal,
-        # )
+        # Broadcast the global aggregated results to all sites
+        self._broadcast_task(
+            task_name=TASK_NAME_LOCAL_CLIENT_STEP4,
+            data=aggregate_result,
+            result_cb=None,
+            fl_ctx=fl_ctx,
+            abort_signal=abort_signal,
+        )
 
     def _accept_site_regression_result(self, client_task: ClientTask, fl_ctx: FLContext) -> bool:
         """

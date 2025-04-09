@@ -74,4 +74,9 @@ class DCCombatAggregator(Aggregator):
             self.agg_cache = agg_result['cache']
             outgoing_shareable['result'] = agg_result['output']
         
+        elif contribution_round == 2:
+            agg_result = am.combat_remote_step3(fl_ctx, self.site_results[contribution_round], self.agg_cache)
+            self.agg_cache = agg_result['cache']
+            outgoing_shareable['result'] = agg_result['output']
+            
         return outgoing_shareable

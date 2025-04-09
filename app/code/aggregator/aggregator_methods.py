@@ -26,7 +26,7 @@ def combat_remote_step1(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cac
 
 def combat_remote_step2(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
     sites = sorted(list(site_results.keys()))
-    beta_vector_0 = [ np.array(site_results[site]["XtransposeX_local"], dtype=int) for site in sites]
+    beta_vector_0 = [ np.array(site_results[site]["XtransposeX_local"]) for site in sites]
     
     beta_vector_1 = sum(beta_vector_0)
     
@@ -78,5 +78,22 @@ def combat_remote_step2(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cac
         'cache': agg_cache_dict
     }
     
+    return results
+
+def combat_remote_step3(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+    site_keys = list(site_results.keys())
+    sorted_site_keys = sorted(site_keys)
+    
+    var_pooled = [ np.array(site_results[site]["local_var_pooled"]) for site in sorted_site_keys]
+    global_var_pooled = sum(var_pooled)
+    
+    agg_results = {
+        "global_var_pooled": global_var_pooled.tolist(),
+    }
+    
+    results = {
+        'output': agg_results,
+        'cache': agg_cache_dict
+    }
     
     return results

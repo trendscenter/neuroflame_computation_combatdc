@@ -7,7 +7,6 @@ scikit-learn
 statsmodels
 ujson
 fslparser
-mat73
 pandas
 scipy
 coinstacparsers
