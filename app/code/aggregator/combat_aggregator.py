@@ -5,9 +5,10 @@ from nvflare.apis.fl_context import FLContext
 from nvflare.app_common.abstract.aggregator import Aggregator
 from nvflare.apis.fl_constant import ReservedKey
 
-from . import aggregator_methods as am
+from utils.utils import get_output_directory_path
+from utils.logger import NvFlareLogger
 
-# from utils.utils import log
+from . import aggregator_methods as am
 
 class DCCombatAggregator(Aggregator):
 
@@ -18,6 +19,7 @@ class DCCombatAggregator(Aggregator):
         self.agg_cache: Dict[str, Any] = {}
         self.agg_cache_dir: str = "./temp_agg_cache"
         os.makedirs(self.agg_cache_dir, exist_ok=True)  # succeeds even if directory exists.
+        self.logger = None
         pass
 
     def accept(self, site_result: Shareable, fl_ctx: FLContext) -> bool:
@@ -35,19 +37,19 @@ class DCCombatAggregator(Aggregator):
             key=ReservedKey.IDENTITY_NAME, default=None)
         contribution_round = fl_ctx.get_prop(key="CURRENT_ROUND", default=None)
         
-        # log(
-        #     fl_ctx,
-        #     f"Aggregator received contribution from {site_name} for round {contribution_round}"
-        # )
-        
         if contribution_round is None or site_name is None:
             return False  # Could log a warning/error here as well
 
         if contribution_round not in self.site_results:
             self.site_results[contribution_round] = {}
+            
+        if self.logger == None:
+            self.logger = NvFlareLogger('aggregator.log', get_output_directory_path(fl_ctx), 'info')
 
         # Store the result for the site using its identity name as the key
         self.site_results[contribution_round][site_name] = site_result["result"]
+
+        self.logger.info('accepting site result from: ', site_name, 'from round: ', contribution_round)
 
         return True
         
@@ -63,20 +65,26 @@ class DCCombatAggregator(Aggregator):
         """
         outgoing_shareable = Shareable()
         contribution_round = fl_ctx.get_prop(key="CURRENT_ROUND", default=None)
-        
-        if contribution_round == 0:
-            agg_result = am.combat_remote_step1(fl_ctx, self.site_results[contribution_round], self.agg_cache)
-            self.agg_cache = agg_result['cache']
-            outgoing_shareable['result'] = agg_result['output']
-        
-        elif contribution_round == 1:
-            agg_result = am.combat_remote_step2(fl_ctx, self.site_results[contribution_round], self.agg_cache)
-            self.agg_cache = agg_result['cache']
-            outgoing_shareable['result'] = agg_result['output']
-        
-        elif contribution_round == 2:
-            agg_result = am.combat_remote_step3(fl_ctx, self.site_results[contribution_round], self.agg_cache)
-            self.agg_cache = agg_result['cache']
-            outgoing_shareable['result'] = agg_result['output']
+        self.logger.info('aggregation round: ', contribution_round)
+        try:
+            if contribution_round == 0:
+                agg_result = am.combat_remote_step1(self.site_results[contribution_round])
+                self.agg_cache.update(agg_result['cache'])
+                outgoing_shareable['result'] = agg_result['output']
             
-        return outgoing_shareable
+            elif contribution_round == 1:
+                agg_result = am.combat_remote_step2(self.site_results[contribution_round], self.agg_cache)
+                self.agg_cache.update(agg_result['cache'])
+                outgoing_shareable['result'] = agg_result['output']
+            
+            elif contribution_round == 2:
+                agg_result = am.combat_remote_step3(self.site_results[contribution_round], self.agg_cache)
+                self.agg_cache.update(agg_result['cache'])
+                outgoing_shareable['result'] = agg_result['output']
+                self.logger.close()
+            return outgoing_shareable
+        except Exception as err:
+            self.logger.error('Exception: ', err)
+            self.logger.close()
+            # self.task_panic(f'aggregator exception: {err}', fl_ctx)
+            raise Exception(f'exception: {err}')

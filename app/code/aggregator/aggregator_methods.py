@@ -4,11 +4,11 @@ from typing import Dict, Any
 
 from nvflare.apis.fl_context import FLContext
 
-def combat_remote_step1(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+def combat_remote_step1(site_results: Dict[str, Any]):
     site_ids = list(site_results.keys())
     
     site_covar_list = [
-        '{}_{}'.format('site', label) for index, label in enumerate(sorted(site_ids))    
+        '{}_{}'.format('site', label) for _, label in enumerate(sorted(site_ids))    
     ]
     
     output_dict = {
@@ -24,7 +24,7 @@ def combat_remote_step1(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cac
     
     return results
 
-def combat_remote_step2(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
     sites = sorted(list(site_results.keys()))
     beta_vector_0 = [ np.array(site_results[site]["XtransposeX_local"]) for site in sites]
     
@@ -80,7 +80,7 @@ def combat_remote_step2(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cac
     
     return results
 
-def combat_remote_step3(fl_ctx: FLContext, site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+def combat_remote_step3(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
     site_keys = list(site_results.keys())
     sorted_site_keys = sorted(site_keys)
     

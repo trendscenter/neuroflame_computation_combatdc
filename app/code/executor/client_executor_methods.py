@@ -1,19 +1,14 @@
 import copy
 import math
 import os
-from typing import Dict
 import pandas as pd
 import numpy as np
 import numpy.linalg as la
 
-from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
-from nvflare.apis.signal import Signal
-from nvflare.apis.fl_constant import FLContextKey
 
-from utils.utils import get_data_directory_path, get_output_directory_path, get_computation_parameters
+from utils.types import CombatType, ConfigDTO
 from . import local_ancillary as lc
-from . import ancillary as ac
 
 def parse_clientId(inp_str):
     num = ""
@@ -113,24 +108,45 @@ def folders_in(path_to_parent):
         if os.path.isdir(os.path.join(path_to_parent,fname)):
             yield os.path.join(path_to_parent,fname)
 
+def saveBin(path, arr):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb+") as fh:
+        header = "%s" % str(arr.dtype)
+        for index in arr.shape:
+            header += " %d" % index
+        header += "\n"
+        fh.write(header.encode())
+        fh.write(arr.data.tobytes())
+        os.fsync(fh)
 
-def perform_task_step1(fl_ctx: FLContext):
-    input_directory = get_data_directory_path(fl_ctx)
+def loadBin(path):
+    with open(path, "rb") as fh:
+        header = fh.readline().decode().split()
+        dtype = header.pop(0)
+        arrayDimensions = []
+        for dimension in header:
+            arrayDimensions.append(int(dimension))
+        arrayDimensions = tuple(arrayDimensions)
+        return np.frombuffer(fh.read(), dtype=dtype).reshape(arrayDimensions)
+
+
+def perform_task_step1(config: ConfigDTO):
+    input_directory = config.data_path
     
-    computation_parameters = get_computation_parameters(fl_ctx)
-    covariate_file_name = computation_parameters['covariate_file']
-    data_file_name = computation_parameters['data_file']
+    computation_parameters = config.computation_params
+    covariate_file_name = computation_parameters.get('covariate_file')
+    data_file_name = computation_parameters.get('data_file')
     
     covariates_path = os.path.join(input_directory, covariate_file_name)
     data_path = os.path.join(input_directory,data_file_name)
-    combat_type = computation_parameters['combat_alg_type']
-        
-    # log(fl_ctx, f'-- Checking file paths : {str(covariates_path)} and {str(data_path)}')
+    combat_algo = computation_parameters.get('combat_algo')
+
+    config.logger.info('Checking file paths: ', covariates_path, data_path)
     cache_dict = {
         'covar_urls': covariates_path,
         'data_urls': data_path,
         'lambda_value': 0,
-        'combat_alg_type': combat_type
+        'combat_alg_type': combat_algo
     }
     
     # log(fl_ctx, f'step1: {cache_dict}')
@@ -142,14 +158,16 @@ def perform_task_step1(fl_ctx: FLContext):
     return result
     
 
-def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Signal, cache_dict: Dict):
+def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
     agg_results = sharebale.get('result')
+    cache_dict = config.cache_dict
+    
     covar_url = cache_dict.get('covar_urls')
     data_url = cache_dict.get('data_urls')
     lambda_value = cache_dict.get('lambda_value')
     combat_alg_type = cache_dict.get('combat_alg_type')
     
-    # log(fl_ctx, f'step2: initial: {covar_url}, {data_url}, {lambda_value}, {combat_alg_type}')
+    config.logger.info('site files: ', covar_url, data_url, lambda_value, combat_alg_type)
     
     # if a covariates URL was passed and the file has any stored information
     if len(covar_url) > 0 and os.path.getsize(covar_url): 
@@ -165,7 +183,7 @@ def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
         mat_X = pd.DataFrame()
     
     mat_Y = pd.read_csv(data_url) # data
-    site_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
+    site_name = config.site_name
     site_index = parse_clientId(site_name)
     
     # log(fl_ctx, f'site_name: {site_name} and site_index: {site_index}')
@@ -173,24 +191,20 @@ def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     Y = mat_Y.values
     Y_columns = mat_Y.columns 
     sample_count = len(Y)
-    
-    #TODO: check the cache directory
-    output_directory = get_output_directory_path(fl_ctx)
 
     # Interpolation Missing Data
-    if combat_alg_type == "combatMegaDC":
+    if combat_alg_type == CombatType.COMBAT_MEGA_DC.value:
         Y = lc.interpolate_missing_data(Y.T,X.to_numpy()).T # convert nan values to NULL/None .replace({np.nan: None}
     
     # Save Data File
-    ac.saveBin(os.path.join(output_directory, "Y.npy"), Y)
+    saveBin(os.path.join(config.cache_path, "Y.npy"), Y)
 
     # Add Site Data to Covariates to Prep for COMBAT
     augmented_X = lc.add_site_covariates(agg_results, site_name, X, sample_count)
     biased_X = augmented_X.values 
 
     # Save Covariate File
-    # saveBin(os.path.join(cache_dir, "X.npy"), np.array(list(X.to_numpy()),dtype=float))
-    ac.saveBin(os.path.join(output_directory, "X.npy"), np.array(list(augmented_X.to_numpy()),dtype=float))
+    saveBin(os.path.join(config.cache_path, "X.npy"), np.array(list(augmented_X.to_numpy()),dtype=float))
 
     XtransposeX_local = np.matmul(np.matrix.transpose(biased_X), biased_X)
     Xtransposey_local = np.matmul(np.matrix.transpose(biased_X), Y)
@@ -214,18 +228,17 @@ def perform_task_step2(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     return result
 
 
-def perform_task_step3(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Signal, cache_dict: Dict):
-    #TODO: check the cache directory
-    output_directory = get_output_directory_path(fl_ctx)
+def perform_task_step3(sharebale: Shareable, config: ConfigDTO):
     agg_results = sharebale.get('result')
-    
-    covar = ac.loadBin(os.path.join(output_directory, "X.npy"))
-    mat_Y = ac.loadBin(os.path.join(output_directory, "Y.npy"))
+    cache_dict = config.cache_dict
+
+    covar = loadBin(os.path.join(config.cache_path, "X.npy"))
+    mat_Y = loadBin(os.path.join(config.cache_path, "Y.npy"))
     
     data = np.array(np.transpose(mat_Y))
     data_columns = pd.read_json(cache_dict.get("data_names"), orient='split').values
     
-    # log(fl_ctx, f'data_columns: {data_columns}')
+    config.logger.info('data_columns: ', data_columns)
     
     design = covar
     B_hat = np.array(agg_results["B_hat"])
@@ -248,14 +261,12 @@ def perform_task_step3(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
         "stand_mean": stand_mean.tolist(),
         "site_array": site_array,
         "n_batch": n_batch,
-        # "covar_urls": covar_url
     }
     
     output_dict = {
        "local_var_pooled": local_var_pooled.tolist(),
        "computation_phase": "local_2",
        "data_names":pd.DataFrame(data_columns).to_json(orient='split')
-       # "data": pd.DataFrame(data).to_json(orient='split'),
     }
     
     result = {
@@ -266,13 +277,12 @@ def perform_task_step3(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     return result
     
 
-def perform_task_step4(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Signal, cache_dict: Dict):
-    #TODO: check the cache directory
-    output_directory = get_output_directory_path(fl_ctx)
+def perform_task_step4(sharebale: Shareable, config: ConfigDTO):
     agg_results = sharebale.get('result')
+    cache_dict = config.cache_dict
     
     var_pooled = np.array(agg_results['global_var_pooled'])
-    data = np.array(np.transpose(ac.loadBin(os.path.join(output_directory, 'Y.npy'))))
+    data = np.array(np.transpose(loadBin(os.path.join(config.cache_path, 'Y.npy'))))
     stand_mean = np.array(cache_dict.get('stand_mean')).T
     mod_mean = np.array(cache_dict.get('mod_mean'))
     local_n_sample = cache_dict.get('local_sample_count')
@@ -280,7 +290,13 @@ def perform_task_step4(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     site_index = cache_dict.get('site_index')
     site_array = cache_dict.get('site_array')
     
-    # log(fl_ctx, f'site4: stand_mean: {stand_mean}, mod_mean: {mod_mean}, local_n_samples: {local_n_sample}, site_index: {site_index}, site_array: {site_array}')
+    config.logger.info('site4: stand_mean: ', {
+            'stand_mean': stand_mean, 
+            'mod_mean': mod_mean, 
+            'local_n_sample': local_n_sample, 
+            'site_index': site_index
+        }
+    )
     
     indices = [index for index,element in enumerate(site_array) if element== int(site_index)]
     filtered_mean = stand_mean[indices]
@@ -312,5 +328,5 @@ def perform_task_step4(sharebale: Shareable, fl_ctx: FLContext, abort_signal: Si
     
     df = pd.DataFrame(harmonized_data, columns=mat_Y_labels)
     output_name = 'harmonized_site_'+str(site_index)+'_data.csv'
-    
-    df.to_csv(os.path.join(output_directory, output_name), index=False)
+    config.logger.info('results path: ',config.output_path, output_name)
+    df.to_csv(os.path.join(config.output_path, output_name), index=False)

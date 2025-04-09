@@ -7,7 +7,7 @@ import datetime
 from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 
-
+from utils.types import ComputationParamDTO
 
 def is_repo_root(path: str) -> bool:
     """Check if the given path is the repository root by looking for 'system' and 'app' directories."""
@@ -91,7 +91,7 @@ def get_parameters_file_path(fl_ctx: FLContext) -> str:
 
     raise FileNotFoundError("Parameters file path could not be determined.")
 
-def get_computation_parameters(fl_ctx: FLContext):
+def get_computation_parameters(fl_ctx: FLContext) -> ComputationParamDTO:
     return fl_ctx.get_peer_context().get_prop("COMPUTATION_PARAMETERS", {"decimal_places": 2})
 
 def save_results_to_file(results: dict, file_name: str, fl_ctx: FLContext):

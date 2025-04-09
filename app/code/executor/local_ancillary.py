@@ -8,15 +8,6 @@ from numba import jit, prange
 
 warnings.simplefilter("ignore")
 
-
-def mean_and_len_y(y):
-    """Caculate the length mean of each y vector"""
-    meanY_vector = y.mean(axis=0).tolist()
-    lenY_vector = y.count(axis=0).tolist()
-
-    return meanY_vector, lenY_vector
-
-
 @jit(nopython=True)
 def gather_local_stats(X, y):
     """Calculate local statistics"""
@@ -51,32 +42,6 @@ def gather_local_stats(X, y):
         tvalues[:, voxel] = ts_global
 
     return (params, sse, tvalues, rsquared, dof_global)
-
-
-def local_stats_to_dict_vbm(X, y):
-    """Wrap local statistics into a dictionary to be sent to the remote"""
-    X1 = sm.add_constant(X).values.astype('float64')
-    y1 = y.values.astype('float64')
-
-    params, sse, tvalues, rsquared, dof_global = gather_local_stats(X1, y1)
-
-    pvalues = 2 * sp.stats.t.sf(np.abs(tvalues), dof_global)
-
-    keys = [
-        "Coefficient", "Sum Square of Errors", "t Stat", "R Squared"
-    ]
-
-    values1 = pd.DataFrame(list(
-        zip(params.T.tolist(), sse.tolist(), tvalues.T.tolist(),
-            pvalues.T.tolist(), rsquared.tolist())),
-                           columns=keys)
-
-    local_stats_list = values1.to_dict(orient='records')
-
-    beta_vector = params.T.tolist()
-
-    return beta_vector, local_stats_list
-
 
 def ignore_nans(X, y):
     """Removing rows containing NaN's in X and y"""

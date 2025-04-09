@@ -2,13 +2,14 @@ import json
 import logging
 from nvflare.apis.impl.controller import Controller, Task, ClientTask
 from nvflare.apis.fl_context import FLContext
+from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.signal import Signal
 from nvflare.apis.shareable import Shareable
-from utils.utils import get_parameters_file_path
+
+from utils.logger import NvFlareLogger
+from utils.utils import get_parameters_file_path, get_output_directory_path
 from typing import Callable
 from utils.task_constants import *
-
-# from utils.utils import log
 
 class DCCombatController(Controller):
     def __init__(
@@ -27,6 +28,7 @@ class DCCombatController(Controller):
         self._task_timeout = task_timeout
         self._min_clients = min_clients
         self._wait_time_after_min_received = wait_time_after_min_received
+        self.logger = None
 
 #### Computation Author Defined Section ####
 ### This is where computation authors will define the control flow logic ###
@@ -44,6 +46,14 @@ class DCCombatController(Controller):
         self.aggregator = self._engine.get_component(COMBAT_AGGREGATOR_ID)
         # Load and set computation parameters for the sites
         self._load_and_set_computation_parameters(fl_ctx)
+        
+        remote_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
+        if remote_name == None:
+            remote_name = 'remote'
+        remote_name+='.log'
+        output_path = get_output_directory_path(fl_ctx)
+
+        self.logger = NvFlareLogger(remote_name, output_path, 'info')
 
     def control_flow(self, abort_signal: Signal, fl_ctx: FLContext) -> None:
         """
@@ -57,7 +67,9 @@ class DCCombatController(Controller):
         :param fl_ctx: Federated learning context for this run.
         """
         #Keeps track of the iteration number
+        
         fl_ctx.set_prop(key="CURRENT_ROUND", value=0)
+        self.logger.info('Iteration: ', 0)
         
         # Broadcast the regression task and send site results to the aggregator
         self._broadcast_task(
@@ -73,6 +85,7 @@ class DCCombatController(Controller):
 
         #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=1)
+        self.logger.info('Iteration: ', 1)
 
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -88,6 +101,7 @@ class DCCombatController(Controller):
         
         # #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
+        self.logger.info('Iteration: ', 2)
         
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -103,6 +117,7 @@ class DCCombatController(Controller):
         
         # #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=3)
+        self.logger.info('Iteration: ', 3)
         
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -112,6 +127,7 @@ class DCCombatController(Controller):
             fl_ctx=fl_ctx,
             abort_signal=abort_signal,
         )
+        self.logger.close()
 
     def _accept_site_regression_result(self, client_task: ClientTask, fl_ctx: FLContext) -> bool:
         """

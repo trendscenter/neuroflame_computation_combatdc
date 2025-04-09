@@ -87,7 +87,6 @@ class NvFlareLogger:
             "kwargs": kwargs
         }
         
-        # Serialize the log record using our custom JSON encoder.
         try:
             log_line = json.dumps(log_record, cls=NumpyJSONEncoder)
         except Exception as e:
