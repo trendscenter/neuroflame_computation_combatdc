@@ -2,6 +2,8 @@ import os
 import numpy as np
 import json
 import datetime
+import traceback
+import sys
 
 # Mapping of log levels to numeric values for filtering.
 LEVELS = {
@@ -75,7 +77,23 @@ class NvFlareLogger:
         # Filter out messages that are below the threshold.
         if numeric_level < self.level_threshold:
             return
-        
+
+        if 'exc_info' in kwargs and kwargs['exc_info']:
+            exc_info_value = kwargs.pop('exc_info')
+            # If exc_info is True, capture info from sys.exc_info().
+            if exc_info_value is True:
+                exc_type, exc_value, exc_traceback = sys.exc_info()
+            elif isinstance(exc_info_value, BaseException):
+                exc_type = type(exc_info_value)
+                exc_value = exc_info_value
+                exc_traceback = exc_info_value.__traceback__
+            else:
+                exc_type, exc_value, exc_traceback = (None, None, None)
+            if exc_value is not None:
+                # Format the traceback as a string and add it to kwargs.
+                trace = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+                kwargs["trace"] = trace
+
         # Build the log record with UTC timestamp and include level info.
         log_record = {
             "timestamp": datetime.datetime.now().astimezone().strftime("%m/%d/%Y %H:%M:%S") + " : ",

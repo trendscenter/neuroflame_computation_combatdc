@@ -8,6 +8,7 @@ import numpy.linalg as la
 from nvflare.apis.shareable import Shareable
 
 from app.code.utils.types import CombatType, ConfigDTO
+from .client_input_preprocessor import validate_and_get_inputs
 from .local_ancillary import interpolate_missing_data, identify_categorical_covariates, \
     encode_covariates, add_site_covariates
 
@@ -99,17 +100,6 @@ def list_recursive(d, key):
         if k == key:
             yield v
 
-def csv_parser(file_url):
-    dataFrame = pd.read_csv(file_url)
-    data_url = dataFrame["data_url"][0]
-    covar_url = dataFrame["covar_info"][0]
-    return  data_url, covar_url
-
-def folders_in(path_to_parent):
-    for fname in os.listdir(path_to_parent):
-        if os.path.isdir(os.path.join(path_to_parent,fname)):
-            yield os.path.join(path_to_parent,fname)
-
 def saveBin(path, arr):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb+") as fh:
@@ -169,21 +159,13 @@ def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
     combat_alg_type = cache_dict.get('combat_alg_type')
     
     config.logger.info('site files: ', covar_url, data_url, lambda_value, combat_alg_type)
-    
-    # if a covariates URL was passed and the file has any stored information
-    if len(covar_url) > 0 and os.path.getsize(covar_url): 
-        mat_X = pd.read_csv(covar_url) # covariates
 
-        # get covariate types
-        X_cat = identify_categorical_covariates(mat_X)
+    mat_X, mat_Y = validate_and_get_inputs(covar_url, data_url, combat_alg_type, config.computation_params, config.logger)
+    X_cat = identify_categorical_covariates(mat_X)
 
-        # if there are categorical covariates, one-hot-encode them
-        if str in X_cat:
-            mat_X = encode_covariates(mat_X,X_cat)
-    else:
-        mat_X = pd.DataFrame()
-    
-    mat_Y = pd.read_csv(data_url) # data
+    if str in X_cat:
+        mat_X = encode_covariates(mat_X, X_cat)
+
     site_name = config.site_name
     site_index = parse_clientId(site_name)
     

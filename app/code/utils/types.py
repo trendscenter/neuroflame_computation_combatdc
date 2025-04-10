@@ -1,12 +1,13 @@
 from typing import NamedTuple, Dict, Any, TypedDict
 from enum import Enum
 
-from . import logger
+from .logger import NvFlareLogger
 
 class ComputationParamDTO(TypedDict):
   covariate_file: str
   data_file: str
   combat_algo: str
+  covariates_types: Dict[str, Any]
 
 class ConfigDTO(NamedTuple):
   data_path: str
@@ -14,7 +15,7 @@ class ConfigDTO(NamedTuple):
   cache_path: str
   computation_params: ComputationParamDTO
   cache_dict: Dict[str, Any]
-  logger: logger.NvFlareLogger
+  logger: NvFlareLogger
   site_name: str
   
 class CombatType(Enum):
