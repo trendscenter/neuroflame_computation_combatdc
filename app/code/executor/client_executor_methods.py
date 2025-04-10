@@ -7,8 +7,10 @@ import numpy.linalg as la
 
 from nvflare.apis.shareable import Shareable
 
-from utils.types import CombatType, ConfigDTO
-from . import local_ancillary as lc
+from app.code.utils.types import CombatType, ConfigDTO
+from .local_ancillary import interpolate_missing_data, identify_categorical_covariates, \
+    encode_covariates, add_site_covariates
+
 
 def parse_clientId(inp_str):
     num = ""
@@ -149,7 +151,6 @@ def perform_task_step1(config: ConfigDTO):
         'combat_alg_type': combat_algo
     }
     
-    # log(fl_ctx, f'step1: {cache_dict}')
     result = {
         'cache': cache_dict,
         'output': {}
@@ -174,11 +175,11 @@ def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
         mat_X = pd.read_csv(covar_url) # covariates
 
         # get covariate types
-        X_cat = lc.identify_categorical_covariates(mat_X)
+        X_cat = identify_categorical_covariates(mat_X)
 
         # if there are categorical covariates, one-hot-encode them
         if str in X_cat:
-            mat_X = lc.encode_covariates(mat_X,X_cat)
+            mat_X = encode_covariates(mat_X,X_cat)
     else:
         mat_X = pd.DataFrame()
     
@@ -186,21 +187,20 @@ def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
     site_name = config.site_name
     site_index = parse_clientId(site_name)
     
-    # log(fl_ctx, f'site_name: {site_name} and site_index: {site_index}')
-    X = mat_X 
+    X = mat_X
     Y = mat_Y.values
     Y_columns = mat_Y.columns 
     sample_count = len(Y)
 
     # Interpolation Missing Data
     if combat_alg_type == CombatType.COMBAT_MEGA_DC.value:
-        Y = lc.interpolate_missing_data(Y.T,X.to_numpy()).T # convert nan values to NULL/None .replace({np.nan: None}
+        Y = interpolate_missing_data(Y.T,X.to_numpy()).T # convert nan values to NULL/None .replace({np.nan: None}
     
     # Save Data File
     saveBin(os.path.join(config.cache_path, "Y.npy"), Y)
 
     # Add Site Data to Covariates to Prep for COMBAT
-    augmented_X = lc.add_site_covariates(agg_results, site_name, X, sample_count)
+    augmented_X = add_site_covariates(agg_results, site_name, X, sample_count)
     biased_X = augmented_X.values 
 
     # Save Covariate File

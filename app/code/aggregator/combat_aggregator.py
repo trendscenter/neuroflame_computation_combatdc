@@ -5,9 +5,8 @@ from nvflare.apis.fl_context import FLContext
 from nvflare.app_common.abstract.aggregator import Aggregator
 from nvflare.apis.fl_constant import ReservedKey
 
-from utils.utils import get_output_directory_path
-from utils.logger import NvFlareLogger
-
+from app.code.utils.utils import get_output_directory_path
+from app.code.utils.logger import NvFlareLogger
 from . import aggregator_methods as am
 
 class DCCombatAggregator(Aggregator):
@@ -43,7 +42,7 @@ class DCCombatAggregator(Aggregator):
         if contribution_round not in self.site_results:
             self.site_results[contribution_round] = {}
             
-        if self.logger == None:
+        if self.logger is None:
             self.logger = NvFlareLogger('aggregator.log', get_output_directory_path(fl_ctx), 'info')
 
         # Store the result for the site using its identity name as the key
@@ -86,5 +85,4 @@ class DCCombatAggregator(Aggregator):
         except Exception as err:
             self.logger.error('Exception: ', err)
             self.logger.close()
-            # self.task_panic(f'aggregator exception: {err}', fl_ctx)
             raise Exception(f'exception: {err}')

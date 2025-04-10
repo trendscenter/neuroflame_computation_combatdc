@@ -1,8 +1,5 @@
-import numpy as np
-import pandas as pd
 from typing import Dict, Any
-
-from nvflare.apis.fl_context import FLContext
+import numpy as np
 
 def combat_remote_step1(site_results: Dict[str, Any]):
     site_ids = list(site_results.keys())
