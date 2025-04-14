@@ -3,8 +3,8 @@
   "data_file": "MissingData.csv",
   "combat_algo": "combatMegaDC",
   "covariates_types": {
-    "sex": "str",
-    "isControl":"bool",
-    "age":"float"
+    "isControl": "bool",
+    "age": "float",
+    "sex": "str"
   }
 }

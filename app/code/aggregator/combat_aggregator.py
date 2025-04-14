@@ -43,7 +43,7 @@ class DCCombatAggregator(Aggregator):
             self.site_results[contribution_round] = {}
             
         if self.logger is None:
-            self.logger = NvFlareLogger('aggregator.log', get_output_directory_path(fl_ctx), 'info')
+            self.logger = NvFlareLogger('aggregator.log', get_output_directory_path(fl_ctx))
 
         # Store the result for the site using its identity name as the key
         self.site_results[contribution_round][site_name] = site_result["result"]

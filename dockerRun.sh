@@ -10,6 +10,7 @@ echo "Using REMOTE_WORKSPACE: $REMOTE_WORKSPACE"
 
 # Run Docker, disabling path conversion on Windows
 MSYS_NO_PATHCONV=1 docker run --rm -it \
+    -e LOG_LEVEL="error" \
     --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 \
     --name nvflare-dccombat \
     -v "$LOCAL_WORKSPACE:$REMOTE_WORKSPACE" \

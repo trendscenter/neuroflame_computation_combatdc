@@ -48,8 +48,7 @@ class DCCombatExecutor(Executor):
         client_log_name = client_name+".log"
         output_path = get_output_directory_path(fl_ctx)
         
-        # TODO: get logger log level from env
-        logger = NvFlareLogger(client_log_name, output_path, 'info')
+        logger = NvFlareLogger(client_log_name, output_path)
         
         cache_dict = cache.CacheSerialStore(get_output_directory_path(fl_ctx)) 
         cache_path = cache_dict.get_cache_dir()

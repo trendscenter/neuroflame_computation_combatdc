@@ -2,15 +2,15 @@ import logging
 import numpy as np
 import pandas as pd
 
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from app.code.utils.types import ComputationParamDTO, CombatType
 from app.code.utils.logger import NvFlareLogger
-from .exceptions import ValidationException
+from app.code.utils.exceptions import ValidationException
 
 
 def validate_and_get_inputs(covariates_path: str, data_path: str, combat_algo_type: str, computation_parameters: ComputationParamDTO,
-                           logger: NvFlareLogger) -> Any:
+                           logger: NvFlareLogger) -> Tuple[pd.DataFrame, pd.DataFrame]:
     try:
         # If given as covariate:datatype as input format
         expected_covariates_info = computation_parameters.get('covariates_types')
@@ -48,8 +48,6 @@ def validate_and_get_inputs(covariates_path: str, data_path: str, combat_algo_ty
 
         logger.info('converting to required type:')
         X = convert_data_to_given_type(covariates, expected_covariates_info, logger)
-        # dummy encoding categorical variables
-        X = pd.get_dummies(X, drop_first=True)
         y = convert_data_to_given_type(data, expected_data_info, logger)
 
         # If all checks pass
@@ -68,7 +66,7 @@ def convert_data_to_given_type(data_df: pd.DataFrame, column_info: dict, logger:
     # All the potential
     try:
         for column_name, column_datatype in column_info.items():
-            logger.info(f'Casting datatype of column: ', column_name, ' to the requested datatype: ', column_datatype)
+            logger.debug(f'Casting datatype of column: ', column_name, ' to the requested datatype: ', column_datatype)
             if column_datatype.strip().lower() == "int":
                 data_df[column_name] = pd.to_numeric(data_df[column_name], errors='coerce').astype(
                     'int')  # or .astype('Int64')
@@ -98,7 +96,7 @@ def _validate_data_datatypes(data_df: pd.DataFrame, column_info: dict, logger: N
     all_rows_to_ignore = set()
     try:
         for column_name, column_datatype in column_info.items():
-            logger.info('Validating column: ', column_name, 'with requested datatype: ', column_datatype)
+            logger.debug('Validating column: ', column_name, 'with requested datatype: ', column_datatype)
             if column_datatype.strip().lower() == "int":
                 temp = pd.to_numeric(data_df[column_name], errors='coerce').astype('int')  # or .astype('Int64')
             elif column_datatype.strip().lower() == "float":
@@ -118,7 +116,7 @@ def _validate_data_datatypes(data_df: pd.DataFrame, column_info: dict, logger: N
             # Check for emtpy values in the data
             if column_datatype.strip().lower() == "str":
                 empty_rows_to_ignore = data_df[temp.str.strip() == ''].index
-            logger.info(f'All rows to ignore: {str(all_rows_to_ignore)}')
+            logger.debug(f'All rows to ignore: {str(all_rows_to_ignore)}')
 
             all_rows_to_ignore.update(null_rows_to_ignore, empty_rows_to_ignore)
             if len(null_rows_to_ignore) > 0:
