@@ -254,7 +254,7 @@ def perform_task_step3(sharebale: Shareable, config: ConfigDTO):
     
     result = {
         'output': output_dict,
-        'cache': cache_dict
+        'cache': config.cache_dict
     }
     
     return result
