@@ -135,15 +135,15 @@ def perform_task_step1(config: ConfigDTO):
     combat_algo = computation_parameters.get('combat_algo')
 
     config.logger.info('Checking file paths: ', covariates_path, data_path)
-    cache_dict = {
+    config.cache_dict.update({
         'covar_urls': covariates_path,
         'data_urls': data_path,
         'lambda_value': 0,
         'combat_alg_type': combat_algo
-    }
+    })
     
     result = {
-        'cache': cache_dict,
+        'cache': config.cache_dict,
         'output': {}
     }
     
@@ -199,14 +199,14 @@ def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
         "lambda_value": lambda_value,
         "site_index": site_index,
     }
-    cache_dict = {
+    config.cache_dict.update({
         "local_sample_count": sample_count,
         "data_names":pd.DataFrame(Y_columns).to_json(orient='split'),
         "site_index": site_index,
         "combat_alg_type": combat_alg_type
-    }
+    })
 
-    result = {"output": output_dict, "cache": cache_dict}
+    result = {"output": output_dict, "cache": config.cache_dict}
 
     return result
 
@@ -239,12 +239,12 @@ def perform_task_step3(sharebale: Shareable, config: ConfigDTO):
         tmp[:,range(-n_batch,0)] = 0
         mod_mean = np.transpose(np.dot(tmp, B_hat))
     
-    cache_dict = {
+    config.cache_dict.update({
         "mod_mean": mod_mean.tolist(),
         "stand_mean": stand_mean.tolist(),
         "site_array": site_array,
         "n_batch": n_batch,
-    }
+    })
     
     output_dict = {
        "local_var_pooled": local_var_pooled.tolist(),
