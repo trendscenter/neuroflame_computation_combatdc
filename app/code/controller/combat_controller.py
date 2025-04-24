@@ -1,14 +1,17 @@
 import json
-import logging
+from typing import Callable
+
 from nvflare.apis.impl.controller import Controller, Task, ClientTask
 from nvflare.apis.fl_context import FLContext
+from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.signal import Signal
 from nvflare.apis.shareable import Shareable
-from utils.utils import get_parameters_file_path
-from typing import Callable
-from utils.task_constants import *
 
-class MyController(Controller):
+from app.code.utils.logger import  NvFlareLogger
+from app.code.utils.utils import get_parameters_file_path, get_output_directory_path
+from app.code.utils.task_constants import *
+
+class DCCombatController(Controller):
     def __init__(
         self,
         min_clients: int = 2,
@@ -16,8 +19,7 @@ class MyController(Controller):
         task_timeout: int = 0,
     ):
         """
-        Initializes the SrrController with specific parameters for task broadcasting.
-
+        Initiated by the Job to complete a workflow defined in the fed_client_server.json
         :param min_clients: Minimum number of client responses required.
         :param wait_time_after_min_received: Time to wait after receiving minimum responses.
         :param task_timeout: Timeout for task completion.
@@ -26,13 +28,14 @@ class MyController(Controller):
         self._task_timeout = task_timeout
         self._min_clients = min_clients
         self._wait_time_after_min_received = wait_time_after_min_received
+        self.logger = None
 
 #### Computation Author Defined Section ####
 ### This is where computation authors will define the control flow logic ###
 
     def start_controller(self, fl_ctx: FLContext) -> None:
         """
-        Called when the controller starts. It assigns the SRR aggregator component
+        Called when the controller starts. It assigns the aggregator component
         and loads computation parameters into the shared context.
 
         This is a Framework-Specific Required Method.
@@ -43,6 +46,14 @@ class MyController(Controller):
         self.aggregator = self._engine.get_component(COMBAT_AGGREGATOR_ID)
         # Load and set computation parameters for the sites
         self._load_and_set_computation_parameters(fl_ctx)
+        
+        remote_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
+        if remote_name == None:
+            remote_name = 'remote'
+        remote_name+='.log'
+        output_path = get_output_directory_path(fl_ctx)
+
+        self.logger = NvFlareLogger(remote_name, output_path)
 
     def control_flow(self, abort_signal: Signal, fl_ctx: FLContext) -> None:
         """
@@ -56,7 +67,9 @@ class MyController(Controller):
         :param fl_ctx: Federated learning context for this run.
         """
         #Keeps track of the iteration number
+        
         fl_ctx.set_prop(key="CURRENT_ROUND", value=0)
+        self.logger.info('Iteration: ', 0)
         
         # Broadcast the regression task and send site results to the aggregator
         self._broadcast_task(
@@ -72,6 +85,7 @@ class MyController(Controller):
 
         #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=1)
+        self.logger.info('Iteration: ', 1)
 
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -82,11 +96,12 @@ class MyController(Controller):
             abort_signal=abort_signal,
         )
         
-        # Aggregate results from all sites
-        aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        # # Aggregate results from all sites
+        aggregate_result = self.aggregator.aggregate(fl_ctx)
         
-        #Increment iteration number after every aggregation
+        # #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=2)
+        self.logger.info('Iteration: ', 2)
         
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -97,11 +112,12 @@ class MyController(Controller):
             abort_signal=abort_signal,
         )
         
-        # Aggregate results from all sites
-        aggregate_result = self.srr_aggregator.aggregate(fl_ctx)
+        # # Aggregate results from all sites
+        aggregate_result = self.aggregator.aggregate(fl_ctx)
         
-        #Increment iteration number after every aggregation
+        # #Increment iteration number after every aggregation
         fl_ctx.set_prop(key="CURRENT_ROUND", value=3)
+        self.logger.info('Iteration: ', 3)
         
         # Broadcast the global aggregated results to all sites
         self._broadcast_task(
@@ -111,6 +127,7 @@ class MyController(Controller):
             fl_ctx=fl_ctx,
             abort_signal=abort_signal,
         )
+        self.logger.close()
 
     def _accept_site_regression_result(self, client_task: ClientTask, fl_ctx: FLContext) -> bool:
         """

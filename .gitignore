@@ -6,3 +6,4 @@ simulator_workspace/
 test_output/
 poc-workspace/
 .devcontainer/
+.github/
