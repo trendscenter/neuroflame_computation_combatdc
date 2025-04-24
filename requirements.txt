@@ -1,13 +1,13 @@
 matplotlib
 nilearn
+nibabel
 numba
 numpy
 scikit-learn
 statsmodels
 ujson
 fslparser
-mat73
 pandas
 scipy
 coinstacparsers
-nvflare
+simplejson

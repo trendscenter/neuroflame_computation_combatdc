@@ -1,5 +1,10 @@
 {
   "covariate_file": "CatCovariate.csv",
   "data_file": "MissingData.csv",
-  "combat_alg_type": "combatMegaDC"
+  "combat_algo": "combatMegaDC",
+  "covariates_types": {
+    "isControl": "bool",
+    "age": "float",
+    "sex": "str"
+  }
 }
