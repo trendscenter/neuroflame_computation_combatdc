@@ -7,7 +7,7 @@ import numpy.linalg as la
 
 from nvflare.apis.shareable import Shareable
 
-from app.code.utils.types import CombatType, ConfigDTO
+from utils.types import CombatType, ConfigDTO
 from .client_input_preprocessor import validate_and_get_inputs
 from .local_ancillary import interpolate_missing_data, identify_categorical_covariates, \
     encode_covariates, add_site_covariates

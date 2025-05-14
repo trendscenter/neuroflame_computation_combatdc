@@ -4,7 +4,7 @@ charset-normalizer==3.4.1
 click==8.1.8
 coinstacparsers==0.0.3
 contourpy==1.1.1
-cryptography==44.0.2
+cryptography==42.0.8
 cycler==0.12.1
 docker==7.1.0
 Flask==2.2.5

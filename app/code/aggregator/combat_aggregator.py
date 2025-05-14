@@ -5,8 +5,8 @@ from nvflare.apis.fl_context import FLContext
 from nvflare.app_common.abstract.aggregator import Aggregator
 from nvflare.apis.fl_constant import ReservedKey
 
-from app.code.utils.utils import get_output_directory_path
-from app.code.utils.logger import NvFlareLogger
+from utils.utils import get_output_directory_path
+from utils.logger import NvFlareLogger
 from . import aggregator_methods as am
 
 class DCCombatAggregator(Aggregator):

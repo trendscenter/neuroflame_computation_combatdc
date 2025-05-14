@@ -4,9 +4,9 @@ import pandas as pd
 
 from typing import Dict, Any, Tuple
 
-from app.code.utils.types import ComputationParamDTO, CombatType
-from app.code.utils.logger import NvFlareLogger
-from app.code.utils.exceptions import ValidationException
+from utils.types import ComputationParamDTO, CombatType
+from utils.logger import NvFlareLogger
+from utils.exceptions import ValidationException
 
 
 def validate_and_get_inputs(covariates_path: str, data_path: str, combat_algo_type: str, computation_parameters: ComputationParamDTO,
