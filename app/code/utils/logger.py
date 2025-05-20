@@ -59,12 +59,12 @@ class NvFlareLogger:
         logger.error("An error occurred", error=exc_info)
         logger.close()  # Always close the logger when done.
     """
-    def __init__(self, filename, filePath):
+    def __init__(self, filename: str, filePath: str, log_level:str):
         self.filename = filename
         self.filePath = os.path.join(filePath, filename)
         self.file = open(self.filePath, "a", encoding="utf-8")
         # Set logging threshold (lower numeric value means more verbose)
-        self.level = os.environ.get('LOG_LEVEL', 'error')
+        self.level = log_level if log_level in LEVELS else os.environ.get('LOG_LEVEL', 'error') 
         self.level_threshold = LEVELS.get(self.level, 10)
     
     def _log(self, level, *args, **kwargs):

@@ -8,6 +8,7 @@ class ComputationParamDTO(TypedDict):
   data_file: str
   combat_algo: str
   covariates_types: Dict[str, Any]
+  log_level: str
 
 class ConfigDTO(NamedTuple):
   data_path: str

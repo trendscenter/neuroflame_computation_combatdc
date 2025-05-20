@@ -6,6 +6,7 @@ from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
 from nvflare.apis.signal import Signal
 
+from utils.types import ComputationParamDTO
 from utils.logger import NvFlareLogger
 from utils.utils import get_computation_parameters, get_data_directory_path, get_output_directory_path
 from utils.task_constants import *
@@ -44,11 +45,12 @@ class DCCombatExecutor(Executor):
             A Shareable object containing results of the task.
         """
         
+        computation_params = get_computation_parameters(fl_ctx)
         client_name = fl_ctx.get_prop(FLContextKey.CLIENT_NAME)
         client_log_name = client_name+".log"
         output_path = get_output_directory_path(fl_ctx)
         
-        logger = NvFlareLogger(client_log_name, output_path)
+        logger = NvFlareLogger(client_log_name, output_path, computation_params.get('log_level'))
         
         cache_dict = cache.CacheSerialStore(get_output_directory_path(fl_ctx)) 
         cache_path = cache_dict.get_cache_dir()
@@ -57,7 +59,7 @@ class DCCombatExecutor(Executor):
             data_path=get_data_directory_path(fl_ctx),
             output_path=output_path,
             cache_path=cache_path,
-            computation_params=get_computation_parameters(fl_ctx),
+            computation_params=computation_params,
             logger=logger,
             site_name=client_name, 
             cache_dict=cache_dict.get_cache_dict()

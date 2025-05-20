@@ -8,6 +8,7 @@ import numpy.linalg as la
 from nvflare.apis.shareable import Shareable
 
 from utils.types import CombatType, ConfigDTO
+from utils.html_templates import get_results_page_template
 from .client_input_preprocessor import validate_and_get_inputs
 from .local_ancillary import interpolate_missing_data, identify_categorical_covariates, \
     encode_covariates, add_site_covariates
@@ -162,7 +163,12 @@ def perform_task_step2(sharebale: Shareable, config: ConfigDTO):
     config.logger.info('site files: ', covar_url, data_url, lambda_value, combat_alg_type)
 
     mat_X, mat_Y = validate_and_get_inputs(covar_url, data_url, combat_alg_type, config.computation_params, config.logger)
+    config.logger.info('Completed Site Data Validation')
+    
+    config.logger.info('mat_X: ', mat_X, 'mat_Y: ', mat_Y)
+    
     X_cat = identify_categorical_covariates(mat_X)
+    
 
     if str in X_cat:
         mat_X = encode_covariates(mat_X, X_cat)
@@ -313,3 +319,7 @@ def perform_task_step4(sharebale: Shareable, config: ConfigDTO):
     output_name = 'harmonized_site_'+str(site_index)+'_data.csv'
     config.logger.info('results path: ',config.output_path, output_name)
     df.to_csv(os.path.join(config.output_path, output_name), index=False)
+
+    html_content = get_results_page_template(output_name)
+    with open(os.path.join(config.output_path, "index.html"), "w") as html_file:
+        html_file.write(html_content)
