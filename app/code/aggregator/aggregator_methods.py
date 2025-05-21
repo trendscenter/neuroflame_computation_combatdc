@@ -1,6 +1,8 @@
 from typing import Dict, Any
 import numpy as np
 
+from utils.logger import NvFlareLogger
+
 def combat_remote_step1(site_results: Dict[str, Any]):
     site_ids = list(site_results.keys())
     
@@ -21,10 +23,10 @@ def combat_remote_step1(site_results: Dict[str, Any]):
     
     return results
 
-def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any], logger: NvFlareLogger):
     sites = sorted(list(site_results.keys()))
     beta_vector_0 = [ np.array(site_results[site]["XtransposeX_local"]) for site in sites]
-    
+    logger.debug('beta_vector_0: ', beta_vector_0)
     beta_vector_1 = sum(beta_vector_0)
     
     all_lambdas = [site_results[site]["lambda_value"] for site in sites]
@@ -32,13 +34,15 @@ def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, 
         raise Exception("Unequal lambdas at local sites")
     
     beta_vector_1 = beta_vector_1 + np.unique(all_lambdas) * np.eye(beta_vector_1.shape[0])   
-
+    logger.debug('beta_vector_1: ', beta_vector_1)
+    
     beta_vectors = np.matrix.transpose(
     sum([
         np.matmul(np.linalg.inv(beta_vector_1),
                     site_results[site]["Xtransposey_local"])
         for site in site_results.keys()
     ]))
+    logger.debug('beta_vectors: ', beta_vectors)
     B_hat = beta_vectors.T
 
     n_batch =  len(sites)
@@ -63,6 +67,7 @@ def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, 
         "stand_mean": stand_mean.tolist(),
         "site_array": site_array.tolist(),
     }
+    logger.debug('agg_results: ', agg_results)
 
     agg_cache_dict.update({
         "avg_beta_vector": B_hat.tolist(),
@@ -77,13 +82,14 @@ def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, 
     
     return results
 
-def combat_remote_step3(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any]):
+def combat_remote_step3(site_results: Dict[str, Any], agg_cache_dict: Dict[str, Any], logger: NvFlareLogger):
     site_keys = list(site_results.keys())
     sorted_site_keys = sorted(site_keys)
     
     var_pooled = [ np.array(site_results[site]["local_var_pooled"]) for site in sorted_site_keys]
+    logger.debug('var_pooled: ', var_pooled)
     global_var_pooled = sum(var_pooled)
-    
+    logger.debug('global_var_pooled: ', global_var_pooled)
     agg_results = {
         "global_var_pooled": global_var_pooled.tolist(),
     }
