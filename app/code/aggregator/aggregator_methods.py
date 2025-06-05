@@ -36,13 +36,33 @@ def combat_remote_step2(site_results: Dict[str, Any], agg_cache_dict: Dict[str, 
     beta_vector_1 = beta_vector_1 + np.unique(all_lambdas) * np.eye(beta_vector_1.shape[0])   
     logger.debug('beta_vector_1: ', beta_vector_1)
     
-    beta_vectors = np.matrix.transpose(
-    sum([
-        np.matmul(np.linalg.inv(beta_vector_1),
-                    site_results[site]["Xtransposey_local"])
-        for site in site_results.keys()
-    ]))
-    logger.debug('beta_vectors: ', beta_vectors)
+    # 2) Compute the explicit inverse of β₁ once.
+    inv_beta = np.linalg.inv(beta_vector_1)
+    #    inv_beta.shape == (6, 6)
+
+    # 3) Initialize a (6×17) accumulator for summing each site’s contribution.
+    sum_matrix = np.zeros((6, 17), dtype=float)
+
+    # 4) Loop over sites in a deterministic order; for each site, do exactly:
+    #      inv_beta @ XTy_local  (shape 6×6 @ shape 6×17 → shape 6×17),
+    #    then add that to sum_matrix.
+    for site in sorted(site_results.keys()):
+        XTy_local = np.asarray(site_results[site]["Xtransposey_local"])
+
+        # 4a) Compute inv_beta @ XTy_local exactly as in the original code.
+        solved = inv_beta @ XTy_local
+        #    solved.shape == (6, 17)
+
+        # 4b) Accumulate into sum_matrix (still shape 6×17).
+        sum_matrix += solved
+
+    # 5) After summing all sites, sum_matrix is the elementwise sum of each inv(β₁) @ XTy_local.
+    #    Finally, transpose to get shape (17×6) just like your original:
+    #       beta_vectors = np.matrix.transpose(sum([...]))
+    beta_vectors = sum_matrix.T  # shape = (17, 6)
+
+    # 6) logger.debug or return beta_vectors.
+    logger.debug(beta_vectors)
     B_hat = beta_vectors.T
 
     n_batch =  len(sites)
